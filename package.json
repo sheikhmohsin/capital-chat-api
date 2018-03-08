@@ -1,0 +1,29 @@
+{
+  "name": "capital-chat",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node-dev ./bin/www",
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "~1.18.2",
+    "connect-mongo": "^2.0.1",
+    "cookie-parser": "~1.4.3",
+    "cookie-session": "^2.0.0-beta.3",
+    "cors": "^2.8.4",
+    "debug": "~2.6.9",
+    "ejs": "^2.5.7",
+    "express": "~4.15.5",
+    "express-validator": "^4.3.0",
+    "fs": "0.0.1-security",
+    "jsonwebtoken": "^8.2.0",
+    "mongodb": "^3.0.0-rc0",
+    "mongoose": "^5.0.0-rc1",
+    "morgan": "^1.9.0",
+    "passport": "^0.4.0",
+    "passport-google-oauth20": "^1.0.0",
+    "serve-favicon": "~2.4.5"
+  }
+}
