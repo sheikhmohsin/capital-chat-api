@@ -1,13 +1,16 @@
 'use strict';
 
 let mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 let Schema = mongoose.Schema;
 
 let UserSchema = new Schema({
-  firstName: String,
-  lastName: String,
-  username: String,
+  name: String,
+  email: {
+    type: String,
+    unique: true
+  },
   gender: String,
   provider: String,
   providerId: String,
@@ -38,11 +41,31 @@ UserSchema.pre('save', function(next) {
   if (!this.created_at)
     this.created_at = currentDate;
 
-  next();
+  bcrypt.genSalt(10, function(err, salt) {
+    if(err) {
+      return next(err)
+    }
+    bcrypt.hash(this.password, salt, null, function(error, hash) {
+      if(error) {
+        return next(error)
+      }
+      this.password = hash;
+      next();
+    })
+  })
 });
 
 UserSchema.pre('update', function() {
   this.update({},{ $set: { updated_at: new Date() } });
 });
+
+UserSchema.methods.comparePassword = function(candidatePassword, callback) {
+  bcrypt.compare(candidatePassword, this.password, function(err, isMatch) {
+    if(err) {
+      return callback(err);
+    }
+    callback(null, isMatch);
+  });
+}
 
 module.exports = mongoose.model('User', UserSchema);
