@@ -45,7 +45,7 @@ module.exports = () => {
         if(!res.data.emails) {
           let error = new Error("Unable to get user data.");
           error.status = 400;
-          next(error);
+          return next(error);
         }
         user = {
           name: res.data.name.givenName + ' ' + res.data.name.familyName,
