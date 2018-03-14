@@ -23,6 +23,8 @@ let UserSchema = new Schema({
       type: Boolean,
       default: true
   },
+  deviceId: String,
+  deviceType: String,
   created_at: {
     type: Date,
     default: Date.now()

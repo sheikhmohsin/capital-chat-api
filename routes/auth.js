@@ -23,6 +23,11 @@ router.post('/RegisterUser', (req, res, next) => {
     controller.signup(req, res, next);
 })
 
+router.post('/RegisterSocialUser', (req, res, next) => {
+    let controller = userController();
+    controller.registerSocialUser(req, res, next);
+})
+
 router.post('/ChangePassword/:id', (req, res, next) => {
     let controller = userController();
     controller.changePassword(req, res, next);
