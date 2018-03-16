@@ -90,4 +90,8 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500).send(err.stack);
 });
 
+app.get('/', (req, res, next) => {
+  res.send("Welcome to Capital Chat");
+})
+
 module.exports = app;
