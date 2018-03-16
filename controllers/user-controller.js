@@ -54,8 +54,7 @@ module.exports = () => {
           providerId: res.data.id,
           gender: (res.data.gender) ? res.data.gender : null
         }
-        let userObj = new User(user);
-        createUser(userObj)
+        createSocialUser(user)
         .then((doc) => {
           let token = createJWT(doc._id);
           doc.token = token;
@@ -79,8 +78,7 @@ module.exports = () => {
           gender: res.data.gender
         }
         user.email = user.email.replace('\u0040', '@');
-        let userObj = new User(user);
-        createUser(userObj)
+        createSocialUser(user)
         .then((doc) => {
           let token = createJWT(doc._id);
           doc.token = token;
@@ -225,6 +223,29 @@ module.exports = () => {
       })
       .catch((err) => {
         reject(err)
+      })
+    })
+  }
+
+  const createSocialUser = (user) => {
+    return new Promise((resolve, reject) => {
+      User.findOne({email: user.email})
+      .then((userObj) => {
+        if(userObj) {
+          resolve(userObj)
+        } else {
+          let newUser = new User(user);
+          user.save()
+          .then((doc) => {
+            resolve(doc);
+          })
+          .catch((err) => {
+            reject(err);
+          })
+        }
+      })
+      .catch((err) => {
+        reject(err);
       })
     })
   }
