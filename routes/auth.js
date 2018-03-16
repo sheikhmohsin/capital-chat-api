@@ -7,6 +7,10 @@ const verify = require('../middlewares/auth');
 const requireAuth = passport.authenticate('jwt', {session: false});
 const requireSignin = passport.authenticate('local', {session: false});
 
+router.get('/', (req, res, next) => {
+    res.send("Welcome to Capital Chat");
+  })
+
 router.get('/auth/google', passport.authenticate('google', {
     scope: ['profile', 'email']
 }));
