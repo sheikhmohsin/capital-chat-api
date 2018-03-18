@@ -25,79 +25,97 @@ module.exports = () => {
     return User.findById(id);
   }
 
-  methods.registerSocialUser = (req, res, next => {
-    req.checkBody('accessToken', 'Access Token is required.').notEmpty();
-    req.checkBody('socialMediaType', 'Social Media Type is required').notEmpty();
-    let errors = validationErrors();
-    if(errors) {
-      let err = new Error(errors[0]);
-      err.status(400);
-      return next(err);
-    }
-    let accessToken = req.body.accessToken;
-    let socialMediaType = req.body.socialMediaType;
-    let deviceId = (req.body.deviceId) ? req.body.deviceId : null;
-    let deviceType = (req.body.deviceType) ? req.body.deviceType : null;
-    let user = {};
-    if(socialMediaType == 'google') {
-      axios.get('https://www.googleapis.com/plus/v1/people/me?access_token='+accessToken)
-      .then((res) => {
-        if(!res.data.emails) {
-          let error = new Error("Unable to get user data.");
-          error.status = 400;
-          return next(error);
-        }
-        user = {
-          name: res.data.name.givenName + ' ' + res.data.name.familyName,
-          email: res.data.emails[0].value,
-          provider: socialMediaType,
-          providerId: res.data.id,
-          gender: (res.data.gender) ? res.data.gender : null
-        }
-        createSocialUser(user)
-        .then((doc) => {
-          let token = createJWT(doc._id);
-          doc.token = token;
-          res.status(200).send(doc);
-        })
-        .catch((err) => {
-          console.log("create", err)
-          let error = new Error("Error creating object");
-          error.status = 500;
-          next(error);
-        })
-      })
-    } else if(socialMediaType == 'facebook') {
-      axios.get('https://graph.facebook.com/me?fields=name,id,email,gender&access_token='+accessToken)
-      .then((res) => {
-        user = {
-          name: res.data.name,
-          email: res.data.email,
-          provider: socialMediaType,
-          providerId: res.data.id,
-          gender: res.data.gender
-        }
-        user.email = user.email.replace('\u0040', '@');
-        createSocialUser(user)
-        .then((doc) => {
-          let token = createJWT(doc._id);
-          doc.token = token;
-          res.status(200).send(doc);
-        })
-        .catch((err) => {
-          console.log("create", err)
-          let error = new Error("Error creating object");
-          error.status = 500;
-          next(error);
-        })
-      })
-    } else {
-      console.log("create", err)
-      let error = new Error("Invalid social media type.");
-      error.status = 500;
+  methods.registerSocialUser = (req, res, next) => {
+    if(!req.body.socialMediaType || req.body.socialMediaType == '') {
+      let error = new Error("Social Media Type is required.")
+      error.status = 400;
       next(error);
+    } else if(!req.body.accessToken || req.body.accessToken == '') {
+      let error = new Error("AccesToken is required.")
+      error.status = 400;
+      next(error);
+    } else if(!req.body.deviceId || req.body.deviceId == '') {
+      let error = new Error("Device Id is required.")
+      error.status = 400;
+      next(error);
+    } else if(!req.body.deviceType || req.body.deviceType == '') {
+      let error = new Error("Device Type is required.")
+      error.status = 400;
+      next(error);
+    } else {
+      let accessToken = req.body.accessToken;
+      let socialMediaType = req.body.socialMediaType;
+      let deviceId = (req.body.deviceId) ? req.body.deviceId : null;
+      let deviceType = (req.body.deviceType) ? req.body.deviceType : null;
+      let user = {};
+      if(socialMediaType == 'google') {
+        axios.get('https://www.googleapis.com/plus/v1/people/me?access_token='+accessToken)
+        .then((res) => {
+          if(!res.data.emails) {
+            let error = new Error("Unable to get user data.");
+            error.status = 400;
+            return next(error);
+          }
+          user = {
+            name: res.data.name.givenName + ' ' + res.data.name.familyName,
+            email: res.data.emails[0].value,
+            provider: socialMediaType,
+            providerId: res.data.id,
+            gender: (res.data.gender) ? res.data.gender : null
+          }
+          createSocialUser(user)
+          .then((doc) => {
+            let token = createJWT(doc._id);
+            let response = {
+              ...doc._doc,
+              token: token
+            }
+            delete response['password'];
+            res.status(200).send(response);
+          })
+          .catch((err) => {
+            console.log("create", err)
+            let error = new Error(err.message);
+            error.status = 500;
+            next(error);
+          })
+        })
+      } else if(socialMediaType == 'facebook') {
+        axios.get('https://graph.facebook.com/me?fields=name,id,email,gender&access_token='+accessToken)
+        .then((res) => {
+          user = {
+            name: res.data.name,
+            email: res.data.email,
+            provider: socialMediaType,
+            providerId: res.data.id,
+            gender: res.data.gender
+          }
+          user.email = user.email.replace('\u0040', '@');
+          createSocialUser(user)
+          .then((doc) => {
+            let token = createJWT(doc._id);
+            let response = {
+              ...doc._doc,
+              token: token
+            }
+            delete response['password'];
+            res.status(200).send(response);
+          })
+          .catch((err) => {
+            console.log("create", err)
+            let error = new Error(err.message);
+            error.status = 500;
+            next(error);
+          })
+        })
+      } else {
+        console.log("create", err)
+        let error = new Error("Invalid social media type.");
+        error.status = 500;
+        next(error);
+      }
     }
-  })
+  }
 
   methods.findUserByIdSocial = (id) => {
     return User.findById(id);
@@ -108,70 +126,84 @@ module.exports = () => {
   }
 
   methods.signup = async (req, res, next) => {
-    req.checkBody('name', 'Name is required.').notEmpty();
-    req.checkBody('email', 'Email is required').notEmpty();
-    req.checkBody('password', 'Password is required').notEmpty();
-    let errors = validationErrors();
-    if(errors) {
-      let err = new Error(errors[0]);
-      err.status(400);
-      return next(err);
-    }
-    const user = new User({
-      name: req.body.name,
-      email: req.body.email,
-      password: req.body.password,
-      provider: 'local',
-      gender: (req.body.gender) ? req.body.gender : null,
-      verified: (req.body.verified) ? req.body.verified : true,
-      status: (req.body.status) ? req.body.status : true
-    })
-    
-    createUser(user)
-    .then((doc) => {
-      let token = createJWT(doc._id);
-      doc.token = token;
-      res.status(200).send(doc);
-    })
-    .catch((err) => {
-      console.log("create", err)
-      let error = new Error("Error creating object");
-      error.status = 500;
+    if(!req.body.email || req.body.email == '') {
+      let error = new Error("Email is required.")
+      error.status = 400;
       next(error);
-    })
+    } else if(!req.body.password || req.body.password == '') {
+      let error = new Error("Password is required.")
+      error.status = 400;
+      next(error);
+    } else if(!req.body.name || req.body.name == '') {
+      let error = new Error("Name is required.")
+      error.status = 400;
+      next(error);
+    } else {
+      const user = new User({
+        name: req.body.name,
+        email: req.body.email,
+        password: req.body.password,
+        provider: 'local',
+        gender: (req.body.gender) ? req.body.gender : null,
+        verified: (req.body.verified) ? req.body.verified : true,
+        status: (req.body.status) ? req.body.status : true
+      })  
+      createUser(user)
+      .then((doc) => {
+        let token = createJWT(doc._id);
+        let response = {
+          ...doc._doc,
+          token: token
+        }
+        delete response['password'];
+        res.status(200).send(response);
+      })
+      .catch((err) => {
+        let error = new Error(err.message);
+        error.status = 500;
+        next(error);
+      })
+    }
   }
 
   methods.login = async (req, res, next) => {
-    req.checkBody('email', 'Email is required').notEmpty();
-    req.checkBody('password', 'Password is required').notEmpty();
-    if(errors) {
-      let err = new Error(errors[0]);
-      err.status(400);
-      return next(err);
+    if(!req.body.email || req.body.email == '') {
+      let error = new Error("Email is required.")
+      error.status = 400;
+      next(error);
+    } else if(!req.body.password || req.body.password == '') {
+      let error = new Error("Password is required.")
+      error.status = 400;
+      next(error);
+    } else {
+      User.findOne({email: req.body.email})
+      .then((user) => {
+        if(!user) {
+          let error = new Error('Incorrect password or email.');
+          error.status = 401;
+          next(error);
+        } else {
+          user.comparePassword(req.body.password, (err, isMatch) => {
+            if(err) {
+              next(err);
+            }
+            if(!isMatch) {
+              let error = new Error('Incorrect password or email.');
+              error.status = 401;
+              next(error);
+            } else {
+              let token = createJWT(user._id);
+              let response = {
+                ...user._doc,
+                token: token
+              }
+              delete response['password'];
+              res.status(200).send(response);    
+            }
+          })
+        }
+      })
     }
-    User.findOne({email: req.body.email})
-    .then((user) => {
-      if(!user) {
-        let error = new Error('Incorrect password or email.');
-        error.status = 401;
-        next(error);
-      } else {
-        user.comparePassword(req.body.password, (err, isMatch) => {
-          if(err) {
-            next(err);
-          }
-          if(!isMatch) {
-            let error = new Error('Incorrect password or email.');
-            error.status = 401;
-            next(error);
-          } else {
-            let token = createJWT(user._id);
-            user.token = token;
-            res.status(200).send(user);    
-          }
-        })
-      }
-    })
   }
 
   methods.changePassword = (req, res, next) => {
@@ -219,7 +251,7 @@ module.exports = () => {
     return new Promise((resolve, reject) => {
       user.save()
       .then((doc) => {
-          resolve(doc);
+        resolve(doc);
       })
       .catch((err) => {
         reject(err)

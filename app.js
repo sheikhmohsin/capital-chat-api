@@ -12,10 +12,8 @@ let cors = require('cors');
 const passportSetup = require('./config/passport-setup');
 const cookieSession = require('cookie-session');
 const passport = require('passport');
-const expressValidator = require('express-validator');
 
 let app = express();
-app.use(expressValidator())
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');

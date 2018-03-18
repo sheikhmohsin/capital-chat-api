@@ -14,7 +14,10 @@ let UserSchema = new Schema({
   gender: String,
   provider: String,
   providerId: String,
-  password: String,
+  password: {
+    type: String,
+    required: true
+  },
   verified: {
       type: Boolean,
       default: true
@@ -42,19 +45,27 @@ UserSchema.pre('save', function(next) {
   // if created_at doesn't exist, add to that field
   if (!this.created_at)
     this.created_at = currentDate;
-
+  let user = this;
   bcrypt.genSalt(10, function(err, salt) {
     if(err) {
       return next(err)
     }
-    bcrypt.hash(this.password, salt, null, function(error, hash) {
+    bcrypt.hash(user.password, salt, function(error, hash) {
       if(error) {
         return next(error)
       }
-      this.password = hash;
+      user.password = hash;
       next();
     })
   })
+});
+
+UserSchema.post('save', function(error, doc, next) {
+  if (error.code === 11000) {
+    next(new Error('Email already exists.'));
+  } else {
+    next(error);
+  }
 });
 
 UserSchema.pre('update', function() {
