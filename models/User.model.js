@@ -12,12 +12,20 @@ let UserSchema = new Schema({
     unique: true
   },
   gender: String,
+  address: String,
+  contact: String,
+  dob: String,
+  occupation: String,
+  organization: String,
+  bio: String,
+  image: String,
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
   provider: String,
   providerId: String,
-  password: {
-    type: String,
-    required: true
-  },
+  password: String,
   verified: {
       type: Boolean,
       default: true
@@ -45,19 +53,22 @@ UserSchema.pre('save', function(next) {
   // if created_at doesn't exist, add to that field
   if (!this.created_at)
     this.created_at = currentDate;
-  let user = this;
-  bcrypt.genSalt(10, function(err, salt) {
-    if(err) {
-      return next(err)
-    }
-    bcrypt.hash(user.password, salt, function(error, hash) {
-      if(error) {
-        return next(error)
+  
+  if(this.password) {
+    let user = this;
+    bcrypt.genSalt(10, function(err, salt) {
+      if(err) {
+        return next(err)
       }
-      user.password = hash;
-      next();
+      bcrypt.hash(user.password, salt, function(error, hash) {
+        if(error) {
+          return next(error)
+        }
+        user.password = hash;
+        next();
+      })
     })
-  })
+  }
 });
 
 UserSchema.post('save', function(error, doc, next) {

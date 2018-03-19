@@ -85,7 +85,7 @@ app.use(function(err, req, res, next) {
 
   // render the error page
   console.log(err)
-  res.status(err.status || 500).send(err.stack);
+  res.status(err.status || 500).send(err.message);
 });
 
 module.exports = app;

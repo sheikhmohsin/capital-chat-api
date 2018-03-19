@@ -4,7 +4,7 @@ const passport = require('passport');
 const userController = require('../controllers/user-controller')
 const verify = require('../middlewares/auth');
 
-const requireAuth = passport.authenticate('jwt', {session: false});
+const requireAuth = require('../middlewares/auth');
 const requireSignin = passport.authenticate('local', {session: false});
 
 router.get('/', (req, res, next) => {
@@ -37,7 +37,7 @@ router.post('/ChangePassword/:id', (req, res, next) => {
     controller.changePassword(req, res, next);
 })
 
-router.post('/login', requireSignin, (req, res, next) => {
+router.post('/login', (req, res, next) => {
     console.log("after");
     let controller = userController();
     controller.login(req, res, next);
