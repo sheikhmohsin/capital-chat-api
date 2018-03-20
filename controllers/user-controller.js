@@ -70,9 +70,8 @@ module.exports = () => {
       let user = {};
       if(socialMediaType == 'google') {
         axios.get('https://www.googleapis.com/plus/v1/people/me?access_token='+accessToken)
-        .then((res) => {
-          console.log("res", res.data)
-          if(!res.data.emails) {
+        .then((responseGoogle) => {
+          if(!responseGoogle.data.emails) {
             let error = new Error("Unable to connect to server. Please try again later.");
             error.status = 500;
             let response = {
@@ -81,56 +80,57 @@ module.exports = () => {
               user: null
             }
             res.status(error.status).send(response);
-          }
-          user = {
-            name: res.data.name.givenName + ' ' + res.data.name.familyName,
-            email: res.data.emails[0].value,
-            provider: socialMediaType,
-            providerId: res.data.id,
-            gender: (res.data.gender) ? res.data.gender : null,
-            address: null,
-            contact: null,
-            dob: null,
-            occupation: null,
-            organization: null,
-            deviceId: (req.body.deviceId) ? req.body.deviceId : null,
-            deviceType: (req.body.deviceType) ? req.body.deviceType : null,
-            verified: (req.body.verified) ? req.body.verified : true,
-            status: (req.body.status) ? req.body.status : true,
-            image: null,
-            bio: (req.body.bio) ? req.body.bio : null
-          }
-          createSocialUser(user)
-          .then((doc) => {
-            let id = doc._id;
-            let token = createJWT(doc._id);
-            let response = {
-              error: false,
-              message: "User Signed In successfully.",
-              user: {
-                userId: id,
-                ...doc._doc 
-              },
-              token: token
+          } else {
+            user = {
+              name: responseGoogle.data.name.givenName + ' ' + responseGoogle.data.name.familyName,
+              email: responseGoogle.data.emails[0].value,
+              provider: socialMediaType,
+              providerId: responseGoogle.data.id,
+              gender: (responseGoogle.data.gender) ? responseGoogle.data.gender : null,
+              address: null,
+              contact: null,
+              dob: null,
+              occupation: null,
+              organization: null,
+              deviceId: (req.body.deviceId) ? req.body.deviceId : null,
+              deviceType: (req.body.deviceType) ? req.body.deviceType : null,
+              verified: (req.body.verified) ? req.body.verified : true,
+              status: (req.body.status) ? req.body.status : true,
+              image: null,
+              bio: (req.body.bio) ? req.body.bio : null
             }
-            delete response.user['_id'];
-            delete response.user['provider'];
-            delete response.user['providerId'];
-            delete response.user['__v'];
-            delete response.user['created_at'];
-            res.status(200).send(response);
-          })
-          .catch((err) => {
-            console.log("create", err)
-            let error = new Error("Unable to connect to server. Please try again later.");
-            error.status = 500;
-            let response = {
-              error: true,
-              message: error.message,
-              user: null
-            }
-            res.status(error.status).send(response);
-          })
+            createSocialUser(user)
+            .then((doc) => {
+              let id = doc._id;
+              let token = createJWT(doc._id);
+              let response = {
+                error: false,
+                message: "User Signed In successfully.",
+                user: {
+                  userId: id,
+                  ...doc._doc 
+                },
+                token: token
+              }
+              delete response.user['_id'];
+              delete response.user['provider'];
+              delete response.user['providerId'];
+              delete response.user['__v'];
+              delete response.user['created_at'];
+              res.status(200).send(response);
+            })
+            .catch((err) => {
+              console.log("create", err)
+              let error = new Error("Unable to connect to server. Please try again later.");
+              error.status = 500;
+              let response = {
+                error: true,
+                message: error.message,
+                user: null
+              }
+              res.status(error.status).send(response);
+            })
+          }
         })
         .catch((err) => {
           console.log("get google err", err);
@@ -145,13 +145,13 @@ module.exports = () => {
         })
       } else if(socialMediaType == 'facebook') {
         axios.get('https://graph.facebook.com/me?fields=name,id,email,gender&access_token='+accessToken)
-        .then((res) => {
+        .then((responseFacebook) => {
           user = {
-            name: res.data.name,
-            email: res.data.email,
+            name: responseFacebook.data.name,
+            email: responseFacebook.data.email,
             provider: socialMediaType,
-            providerId: res.data.id,
-            gender: res.data.gender,
+            providerId: responseFacebook.data.id,
+            gender: responseFacebook.data.gender,
             address: null,
             contact: null,
             dob: null,
@@ -514,14 +514,20 @@ module.exports = () => {
         if(userObj) {
           resolve(userObj)
         } else {
-          let newUser = new User(user);
-          newUser.save()
-          .then((doc) => {
-            resolve(doc);
-          })
-          .catch((err) => {
+          try {
+            let newUser = new User({
+              ...user
+            });
+            createUser(newUser)
+            .then((doc) => {
+              resolve(doc);
+            })
+            .catch((err) => {
+              reject(err);
+            })
+          } catch(err) {
             reject(err);
-          })
+          }
         }
       })
       .catch((err) => {

@@ -69,6 +69,7 @@ UserSchema.pre('save', function(next) {
       })
     })
   }
+  next();
 });
 
 UserSchema.post('save', function(error, doc, next) {
