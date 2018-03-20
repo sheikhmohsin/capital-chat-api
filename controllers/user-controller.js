@@ -299,7 +299,11 @@ module.exports = () => {
         res.status(200).send(response);
       })
       .catch((err) => {
-        let error = new Error("Unable to connect to server. Please try again later.");
+        let message = "Unable to connect to server. Please try again later.";
+        if(err.code == 11000) {
+          message = "Email already exists."
+        }
+        let error = new Error(message);
         error.status = 500;
         let response = {
           error: true,
